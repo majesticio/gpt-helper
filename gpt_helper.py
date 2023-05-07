@@ -1,13 +1,15 @@
 import asyncio
 import openai
 import os
+import tiktoken
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
 load_dotenv()
 
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
+MAX_TOKENS = 4096
+GPT_MODEL = "gpt-3.5-turbo"
 # Initialize conversation history
 conversation_history = [
     {
@@ -23,7 +25,7 @@ async def generate_text(prompt, conversation_history):
 
     completion = await asyncio.to_thread(
         openai.ChatCompletion.create,
-        model="gpt-3.5-turbo",
+        model=GPT_MODEL,
         messages=conversation_history,
     )
 
@@ -34,20 +36,23 @@ async def generate_text(prompt, conversation_history):
     return assistant_response
 
 
-def count_words(text):
-    return len(text.split())
+def count_tokens(string: str, encoding_model_name: str) -> int:
+    encoding = tiktoken.encoding_for_model(encoding_model_name)
+    # encoding = tiktoken.get_encoding("cl100k_base")
+    num_tokens = len(encoding.encode(string))
+    return num_tokens
 
 
-def truncate_conversation_history(conversation_history, max_words=750):
-    words = 0
+def truncate_conversation_history(conversation_history, max_tokens=MAX_TOKENS):
+    tokens = 0
     truncated_history = []
     system_message = conversation_history[0]
 
     for message in reversed(conversation_history[1:]):  # Skip the system message
-        message_words = count_words(message["content"])
-        words += message_words
+        message_tokens = count_tokens(message["content"], GPT_MODEL)
+        tokens += message_tokens
 
-        if words > max_words:
+        if tokens > max_tokens:
             break
 
         truncated_history.insert(0, message)
@@ -61,7 +66,7 @@ async def main():
     global conversation_history
     while True:
         try:
-            # Truncate the conversation history if it exceeds the word limit
+            # Truncate the conversation history if it exceeds the token limit
             conversation_history = truncate_conversation_history(conversation_history)
 
             # Call generate_text with the truncated conversation history
