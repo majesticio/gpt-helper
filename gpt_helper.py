@@ -8,8 +8,8 @@ load_dotenv()
 
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
-MAX_TOKENS = 4096
-GPT_MODEL = "gpt-3.5-turbo"
+MAX_TOKENS = 8192
+GPT_MODEL = "gpt-4"
 # Initialize conversation history
 conversation_history = [
     {
